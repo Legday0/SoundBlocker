@@ -5,8 +5,8 @@ import com.comphenix.protocol.ProtocolLibrary;
 import com.comphenix.protocol.ProtocolManager;
 import com.comphenix.protocol.events.ListenerPriority;
 import com.comphenix.protocol.events.PacketAdapter;
+import com.comphenix.protocol.events.PacketContainer;
 import com.comphenix.protocol.events.PacketEvent;
-import com.comphenix.protocol.wrappers.MinecraftKey;
 import org.bukkit.Location;
 import org.bukkit.entity.Player;
 
@@ -22,58 +22,69 @@ public class SoundListener {
     }
 
     private void registerPacketListener() {
+        final SoundBlocker pl = this.plugin;
+
         protocolManager.addPacketListener(new PacketAdapter(
-                plugin,
+                pl,
                 ListenerPriority.HIGHEST,
                 PacketType.Play.Server.NAMED_SOUND_EFFECT,
                 PacketType.Play.Server.ENTITY_SOUND
         ) {
             @Override
             public void onPacketSending(PacketEvent event) {
-                try {
-                    String soundKey = getSoundKey(event);
-                    if (soundKey == null) return;
+                String soundKey = getSoundKey(event.getPacket());
+                if (soundKey == null || soundKey.isEmpty()) return;
 
-                    // 1. Check if blocked
-                    if (plugin.isSoundBlocked(soundKey)) {
-                        event.setCancelled(true);
-                        return;
-                    }
+                // debug: طباعة اسم الصوت في الـ console
+                // pl.getLogger().info("[Debug] Sound: " + soundKey);
 
-                    // 2. Check if replaced
-                    SoundReplacement rep = plugin.getReplacement(soundKey);
-                    if (rep != null) {
-                        event.setCancelled(true);
-                        Player player = event.getPlayer();
-                        // Play replacement sound for this player only
-                        Location loc = player.getLocation();
-                        player.playSound(loc, rep.getSound(), rep.getVolume(), rep.getPitch());
-                    }
+                // 1. حجب
+                if (pl.isSoundBlocked(soundKey)) {
+                    event.setCancelled(true);
+                    return;
+                }
 
-                } catch (Exception e) {
-                    // Ignore packet errors silently
+                // 2. تبديل
+                SoundReplacement rep = pl.getReplacement(soundKey);
+                if (rep != null) {
+                    event.setCancelled(true);
+                    Player player = event.getPlayer();
+                    player.playSound(player.getLocation(), rep.getSound(), rep.getVolume(), rep.getPitch());
                 }
             }
         });
     }
 
-    private String getSoundKey(PacketEvent event) {
+    private String getSoundKey(PacketContainer packet) {
+        // محاولة 1: SoundEffects (الطريقة الصح لـ 1.21+)
         try {
-            if (event.getPacketType() == PacketType.Play.Server.NAMED_SOUND_EFFECT) {
-                // NAMED_SOUND_EFFECT has the sound as a MinecraftKey
-                MinecraftKey key = event.getPacket().getMinecraftKeys().read(0);
-                if (key != null) return key.getKey();
-            } else if (event.getPacketType() == PacketType.Play.Server.ENTITY_SOUND) {
-                // ENTITY_SOUND - sound is stored differently
-                MinecraftKey key = event.getPacket().getMinecraftKeys().read(0);
+            var soundEffects = packet.getSoundEffects();
+            if (soundEffects != null && soundEffects.size() > 0) {
+                var sound = soundEffects.readSafely(0);
+                if (sound != null) {
+                    return sound.getKey().getKey();
+                }
+            }
+        } catch (Exception ignored) {}
+
+        // محاولة 2: MinecraftKeys
+        try {
+            var keys = packet.getMinecraftKeys();
+            if (keys != null && keys.size() > 0) {
+                var key = keys.readSafely(0);
                 if (key != null) return key.getKey();
             }
-        } catch (Exception e) {
-            // fallback: try reading as string
-            try {
-                return event.getPacket().getStrings().read(0);
-            } catch (Exception ignored) {}
-        }
+        } catch (Exception ignored) {}
+
+        // محاولة 3: Strings (طريقة قديمة)
+        try {
+            var strings = packet.getStrings();
+            if (strings != null && strings.size() > 0) {
+                String val = strings.readSafely(0);
+                if (val != null) return val;
+            }
+        } catch (Exception ignored) {}
+
         return null;
     }
 
