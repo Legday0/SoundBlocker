@@ -36,7 +36,7 @@ public class SoundListener {
                 if (soundKey == null || soundKey.isEmpty()) return;
 
                 // debug: طباعة اسم الصوت في الـ console
-                // pl.getLogger().info("[Debug] Sound: " + soundKey);
+                pl.getLogger().info("[Debug] Sound: " + soundKey);
 
                 // 1. حجب
                 if (pl.isSoundBlocked(soundKey)) {
