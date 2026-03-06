@@ -1,0 +1,96 @@
+# ============================================================
+#              SoundBlocker v2.0 - Config
+# ============================================================
+#
+# --- قسم الحجب (blocked-sounds) ---
+# الأصوات دي هتتمنع خالص ومش هتشتغل للاعبين
+#
+# --- قسم التبديل (replaced-sounds) ---
+# هنا بتبدل صوت بصوت تاني
+# مثال: صوت الغنم يتحول لصوت بقرة
+#
+# اسماء الاصوات من: https://minecraft.wiki/w/Sounds.json
+# ============================================================
+
+# =====================
+#   الأصوات المحجوبة
+# =====================
+blocked-sounds:
+  # --- حيوانات ---
+  - entity.bat.ambient
+  - entity.bat.loop
+  - entity.squid.ambient
+  - entity.glow_squid.ambient
+  - entity.cod.ambient
+  - entity.salmon.ambient
+  - entity.pufferfish.ambient
+  - entity.tropical_fish.ambient
+
+  # --- كهوف ---
+  - ambient.cave.cave1
+  - ambient.cave.cave2
+  - ambient.cave.cave3
+  - ambient.cave.cave4
+  - ambient.cave.cave5
+  - ambient.cave.cave6
+  - ambient.cave.cave7
+  - ambient.cave.cave8
+  - ambient.cave.cave9
+  - ambient.cave.cave10
+
+# =====================
+#   الأصوات المبدلة
+# =====================
+# الفورمات:
+#   "الصوت_القديم": "الصوت_الجديد"
+#
+# الخصائص الاختيارية لكل تبديل:
+#   sound: اسم الصوت الجديد (مطلوب)
+#   volume: مستوى الصوت (0.0 - 2.0) - افتراضي: 1.0
+#   pitch: درجة الصوت (0.5 - 2.0) - افتراضي: 1.0
+#
+replaced-sounds:
+  # مثال: صوت الغنم يتحول لصوت بقرة
+  "entity.sheep.ambient":
+    sound: "entity.cow.ambient"
+    volume: 1.0
+    pitch: 1.0
+
+  # مثال: صوت الفيلاجر العادي يتحول لصوت ضحك
+  "entity.villager.ambient":
+    sound: "entity.villager.celebrate"
+    volume: 0.8
+    pitch: 1.2
+
+  # مثال: صوت الضفدع يتحول لصوت ضفدع تاني
+  "entity.frog.ambient":
+    sound: "entity.frog.tongue"
+    volume: 0.5
+    pitch: 0.8
+
+  # مثال: صوت الخنزير يتحول لصوت دجاجة
+  "entity.pig.ambient":
+    sound: "entity.chicken.ambient"
+    volume: 1.0
+    pitch: 1.0
+
+# =====================
+#   الرسائل
+# =====================
+messages:
+  prefix: "&8[&bSoundBlocker&8] "
+  reload-success: "&aتم إعادة تحميل الكونفيج بنجاح!"
+  block-success: "&aتم حجب الصوت: &e%sound%"
+  unblock-success: "&cتم إلغاء حجب الصوت: &e%sound%"
+  replace-success: "&aتم تبديل &e%from% &aإلى &e%to%"
+  unreplace-success: "&cتم إلغاء تبديل الصوت: &e%sound%"
+  already-blocked: "&eالصوت ده محجوب أصلاً: &f%sound%"
+  already-replaced: "&eالصوت ده متبدل أصلاً: &f%sound%"
+  not-blocked: "&eالصوت ده مش محجوب: &f%sound%"
+  not-replaced: "&eالصوت ده مش متبدل: &f%sound%"
+  no-permission: "&cمعندكش صلاحية!"
+  usage: "&eالاستخدام: /sb <block|unblock|replace|unreplace|list|reload>"
+  usage-block: "&eاستخدام: /sb block <اسم_الصوت>"
+  usage-unblock: "&eاستخدام: /sb unblock <اسم_الصوت>"
+  usage-replace: "&eاستخدام: /sb replace <الصوت_القديم> <الصوت_الجديد> [volume] [pitch]"
+  usage-unreplace: "&eاستخدام: /sb unreplace <اسم_الصوت>"
