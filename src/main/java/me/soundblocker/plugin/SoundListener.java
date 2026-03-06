@@ -1,12 +1,10 @@
 package me.soundblocker.plugin;
 
+import com.destroystokyo.paper.event.entity.EntitySoundEvent;
 import org.bukkit.Location;
-import org.bukkit.Sound;
-import org.bukkit.SoundCategory;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
-import org.bukkit.event.entity.EntitySoundEvent;
 
 public class SoundListener implements Listener {
 
@@ -30,21 +28,8 @@ public class SoundListener implements Listener {
         SoundReplacement rep = plugin.getReplacement(soundKey);
         if (rep != null) {
             event.setCancelled(true);
-
-            // Play the replacement sound at same location
             Location loc = event.getEntity().getLocation();
-            String newSound = rep.getSound();
-
-            try {
-                // Try to play as Bukkit Sound enum first
-                Sound bukkitSound = Sound.valueOf(
-                    newSound.toUpperCase().replace(".", "_").replace(":", "_")
-                );
-                loc.getWorld().playSound(loc, bukkitSound, rep.getVolume(), rep.getPitch());
-            } catch (IllegalArgumentException e) {
-                // Fallback: play as raw namespaced key string
-                loc.getWorld().playSound(loc, newSound, rep.getVolume(), rep.getPitch());
-            }
+            loc.getWorld().playSound(loc, rep.getSound(), rep.getVolume(), rep.getPitch());
         }
     }
 }
