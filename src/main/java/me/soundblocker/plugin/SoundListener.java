@@ -22,8 +22,10 @@ public class SoundListener {
     }
 
     private void registerPacketListener() {
+        SoundBlocker pl = this.plugin;
+
         protocolManager.addPacketListener(new PacketAdapter(
-                plugin,
+                pl,
                 ListenerPriority.HIGHEST,
                 PacketType.Play.Server.NAMED_SOUND_EFFECT,
                 PacketType.Play.Server.ENTITY_SOUND
@@ -34,24 +36,23 @@ public class SoundListener {
                     String soundKey = getSoundKey(event);
                     if (soundKey == null) return;
 
-                    // 1. Check if blocked
-                    if (plugin.isSoundBlocked(soundKey)) {
+                    // 1. حجب
+                    if (pl.isSoundBlocked(soundKey)) {
                         event.setCancelled(true);
                         return;
                     }
 
-                    // 2. Check if replaced
-                    SoundReplacement rep = plugin.getReplacement(soundKey);
+                    // 2. تبديل
+                    SoundReplacement rep = pl.getReplacement(soundKey);
                     if (rep != null) {
                         event.setCancelled(true);
                         Player player = event.getPlayer();
-                        // Play replacement sound for this player only
                         Location loc = player.getLocation();
                         player.playSound(loc, rep.getSound(), rep.getVolume(), rep.getPitch());
                     }
 
                 } catch (Exception e) {
-                    // Ignore packet errors silently
+                    // تجاهل أخطاء الباكيت
                 }
             }
         });
@@ -59,17 +60,9 @@ public class SoundListener {
 
     private String getSoundKey(PacketEvent event) {
         try {
-            if (event.getPacketType() == PacketType.Play.Server.NAMED_SOUND_EFFECT) {
-                // NAMED_SOUND_EFFECT has the sound as a MinecraftKey
-                MinecraftKey key = event.getPacket().getMinecraftKeys().read(0);
-                if (key != null) return key.getKey();
-            } else if (event.getPacketType() == PacketType.Play.Server.ENTITY_SOUND) {
-                // ENTITY_SOUND - sound is stored differently
-                MinecraftKey key = event.getPacket().getMinecraftKeys().read(0);
-                if (key != null) return key.getKey();
-            }
+            MinecraftKey key = event.getPacket().getMinecraftKeys().read(0);
+            if (key != null) return key.getKey();
         } catch (Exception e) {
-            // fallback: try reading as string
             try {
                 return event.getPacket().getStrings().read(0);
             } catch (Exception ignored) {}
