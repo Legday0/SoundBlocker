@@ -1,31 +1,76 @@
-name: Build SoundBlocker
+package me.soundblocker.plugin;
 
-on:
-  push:
-    branches: [ main, master ]
-  pull_request:
-    branches: [ main, master ]
+import com.comphenix.protocol.PacketType;
+import com.comphenix.protocol.ProtocolLibrary;
+import com.comphenix.protocol.ProtocolManager;
+import com.comphenix.protocol.events.ListenerPriority;
+import com.comphenix.protocol.events.PacketAdapter;
+import com.comphenix.protocol.events.PacketEvent;
+import com.comphenix.protocol.wrappers.MinecraftKey;
+import org.bukkit.Location;
+import org.bukkit.entity.Player;
 
-jobs:
-  build:
-    runs-on: ubuntu-latest
+public class SoundListener {
 
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+    private final SoundBlocker plugin;
+    private final ProtocolManager protocolManager;
 
-      - name: Set up JDK 21
-        uses: actions/setup-java@v4
-        with:
-          java-version: '21'
-          distribution: 'temurin'
+    public SoundListener(SoundBlocker plugin) {
+        this.plugin = plugin;
+        this.protocolManager = ProtocolLibrary.getProtocolManager();
+        registerPacketListener();
+    }
 
-      - name: Build with Maven
-        run: mvn clean package -B
+    private void registerPacketListener() {
+        SoundBlocker pl = this.plugin;
 
-      - name: Upload JAR
-        uses: actions/upload-artifact@v4
-        with:
-          name: SoundBlocker-JAR
-          path: target/SoundBlocker-*.jar
-          if-no-files-found: error
+        protocolManager.addPacketListener(new PacketAdapter(
+                pl,
+                ListenerPriority.HIGHEST,
+                PacketType.Play.Server.NAMED_SOUND_EFFECT,
+                PacketType.Play.Server.ENTITY_SOUND
+        ) {
+            @Override
+            public void onPacketSending(PacketEvent event) {
+                try {
+                    String soundKey = getSoundKey(event);
+                    if (soundKey == null) return;
+
+                    // 1. حجب
+                    if (pl.isSoundBlocked(soundKey)) {
+                        event.setCancelled(true);
+                        return;
+                    }
+
+                    // 2. تبديل
+                    SoundReplacement rep = pl.getReplacement(soundKey);
+                    if (rep != null) {
+                        event.setCancelled(true);
+                        Player player = event.getPlayer();
+                        Location loc = player.getLocation();
+                        player.playSound(loc, rep.getSound(), rep.getVolume(), rep.getPitch());
+                    }
+
+                } catch (Exception e) {
+                    // تجاهل أخطاء الباكيت
+                }
+            }
+        });
+    }
+
+    private String getSoundKey(PacketEvent event) {
+        try {
+            MinecraftKey key = event.getPacket().getMinecraftKeys().read(0);
+            if (key != null) return key.getKey();
+        } catch (Exception e) {
+            try {
+                return event.getPacket().getStrings().read(0);
+            } catch (Exception ignored) {}
+        }
+        return null;
+    }
+
+    public void unregister() {
+        protocolManager.removePacketListeners(plugin);
+    }
+}
