@@ -1,4 +1,4 @@
-# 🔇 SoundBlocker v2.0 — Paper 1.21.1
+# 🔇 SoundBlocker v2.0 — Paper 1.21+
 
 بلوجن لحجب وتبديل أصوات Minecraft على سيرفرات Paper.
 
