@@ -5,79 +5,70 @@ import com.comphenix.protocol.ProtocolLibrary;
 import com.comphenix.protocol.ProtocolManager;
 import com.comphenix.protocol.events.ListenerPriority;
 import com.comphenix.protocol.events.PacketAdapter;
+import com.comphenix.protocol.events.PacketContainer;
 import com.comphenix.protocol.events.PacketEvent;
-import com.comphenix.protocol.wrappers.MinecraftKey;
-import org.bukkit.Location;
 import org.bukkit.entity.Player;
 
-public class SoundListener {
-
-    private final SoundBlocker plugin;
-    private final ProtocolManager protocolManager;
+public class SoundListener extends PacketAdapter {
 
     public SoundListener(SoundBlocker plugin) {
-        this.plugin = plugin;
-        this.protocolManager = ProtocolLibrary.getProtocolManager();
-        registerPacketListener();
+        super(plugin, ListenerPriority.HIGHEST,
+                PacketType.Play.Server.NAMED_SOUND_EFFECT,
+                PacketType.Play.Server.ENTITY_SOUND);
+        ProtocolLibrary.getProtocolManager().addPacketListener(this);
     }
 
-    private void registerPacketListener() {
-        protocolManager.addPacketListener(new PacketAdapter(
-                plugin,
-                ListenerPriority.HIGHEST,
-                PacketType.Play.Server.NAMED_SOUND_EFFECT,
-                PacketType.Play.Server.ENTITY_SOUND
-        ) {
-            @Override
-            public void onPacketSending(PacketEvent event) {
-                try {
-                    String soundKey = getSoundKey(event);
-                    if (soundKey == null) return;
+    @Override
+    public void onPacketSending(PacketEvent event) {
+        try {
+            SoundBlocker pl = SoundBlocker.getInstance();
+            String soundKey = getSoundKey(event.getPacket());
+            if (soundKey == null || soundKey.isEmpty()) return;
 
-                    // 1. Check if blocked
-                    if (plugin.isSoundBlocked(soundKey)) {
-                        event.setCancelled(true);
-                        return;
-                    }
+            // 1. حجب
+            if (pl.isSoundBlocked(soundKey)) {
+                event.setCancelled(true);
+                return;
+            }
 
-                    // 2. Check if replaced
-                    SoundReplacement rep = plugin.getReplacement(soundKey);
-                    if (rep != null) {
-                        event.setCancelled(true);
-                        Player player = event.getPlayer();
-                        // Play replacement sound for this player only
-                        Location loc = player.getLocation();
-                        player.playSound(loc, rep.getSound(), rep.getVolume(), rep.getPitch());
-                    }
+            // 2. تبديل
+            SoundReplacement rep = pl.getReplacement(soundKey);
+            if (rep != null) {
+                event.setCancelled(true);
+                Player player = event.getPlayer();
+                player.playSound(player.getLocation(), rep.getSound(), rep.getVolume(), rep.getPitch());
+            }
+        } catch (Exception ignored) {}
+    }
 
-                } catch (Exception e) {
-                    // Ignore packet errors silently
+    private String getSoundKey(PacketContainer packet) {
+        try {
+            Object soundField = packet.getModifier().readSafely(0);
+            if (soundField != null) {
+                String raw = soundField.toString();
+                if (raw.contains("/ minecraft:")) {
+                    int start = raw.lastIndexOf("/ minecraft:") + "/ minecraft:".length();
+                    int end = raw.indexOf("]", start);
+                    if (end > start) return raw.substring(start, end).trim();
+                }
+                if (raw.contains("minecraft:")) {
+                    int start = raw.lastIndexOf("minecraft:") + "minecraft:".length();
+                    int end = raw.indexOf(",", start);
+                    if (end == -1) end = raw.indexOf("]", start);
+                    if (end == -1) end = raw.indexOf("}", start);
+                    if (end == -1) end = raw.indexOf(" ", start);
+                    if (end > start) return raw.substring(start, end).trim();
                 }
             }
-        });
-    }
-
-    private String getSoundKey(PacketEvent event) {
+        } catch (Exception ignored) {}
         try {
-            if (event.getPacketType() == PacketType.Play.Server.NAMED_SOUND_EFFECT) {
-                // NAMED_SOUND_EFFECT has the sound as a MinecraftKey
-                MinecraftKey key = event.getPacket().getMinecraftKeys().read(0);
-                if (key != null) return key.getKey();
-            } else if (event.getPacketType() == PacketType.Play.Server.ENTITY_SOUND) {
-                // ENTITY_SOUND - sound is stored differently
-                MinecraftKey key = event.getPacket().getMinecraftKeys().read(0);
-                if (key != null) return key.getKey();
-            }
-        } catch (Exception e) {
-            // fallback: try reading as string
-            try {
-                return event.getPacket().getStrings().read(0);
-            } catch (Exception ignored) {}
-        }
+            var key = packet.getMinecraftKeys().readSafely(0);
+            if (key != null) return key.getKey();
+        } catch (Exception ignored) {}
         return null;
     }
 
     public void unregister() {
-        protocolManager.removePacketListeners(plugin);
+        ProtocolLibrary.getProtocolManager().removePacketListeners(SoundBlocker.getInstance());
     }
 }
