@@ -1,0 +1,14 @@
+name: SoundBlocker
+version: '${project.version}'
+main: me.soundblocker.plugin.Main
+api-version: '1.21'
+depend: [packetevents]
+
+commands:
+  sb:
+    description: SoundBlocker command
+    permission: soundblocker.admin
+
+permissions:
+  soundblocker.admin:
+    default: op
