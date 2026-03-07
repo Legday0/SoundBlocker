@@ -1,0 +1,16 @@
+# ============================================================
+#  SoundBlocker - config.yml
+#  الأصوات المحجوبة والمبدلة بتتحفظ في sounds.yml تلقائياً
+# ============================================================
+messages:
+  prefix: "&8[&bSoundBlocker&8] "
+  blocked: "&aتم حجب: &e%sound%"
+  unblocked: "&cتم فك حجب: &e%sound%"
+  replaced: "&aتم تبديل &e%from% &aبـ &e%to%"
+  unreplaced: "&cتم إلغاء تبديل: &e%sound%"
+  already-blocked: "&eمحجوب مسبقاً: &f%sound%"
+  already-replaced: "&eمتبدل مسبقاً: &f%sound%"
+  not-blocked: "&eمش محجوب: &f%sound%"
+  not-replaced: "&eمش متبدل: &f%sound%"
+  reloaded: "&aتم الريلود!"
+  no-perm: "&cمعندكش صلاحية!"
