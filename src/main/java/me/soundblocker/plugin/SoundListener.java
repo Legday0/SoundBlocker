@@ -16,18 +16,17 @@ public class SoundListener extends PacketListenerAbstract {
 
     @Override
     public void onPacketSend(PacketSendEvent event) {
-        // استخدام getInstance عشان نتجنب مشكلة الـ cast
         SoundBlocker pl = SoundBlocker.getInstance();
         if (pl == null) return;
 
         String soundKey = null;
 
         try {
-            if (event.getPacketType() == PacketType.Play.Server.SOUND_EFFECT) {
+            if (event.getPacketType().equals(PacketType.Play.Server.SOUND_EFFECT)) {
                 WrapperPlayServerSoundEffect wrapper = new WrapperPlayServerSoundEffect(event);
                 soundKey = wrapper.getSoundId().getKey().getKey();
 
-            } else if (event.getPacketType() == PacketType.Play.Server.ENTITY_SOUND_EFFECT) {
+            } else if (event.getPacketType().equals(PacketType.Play.Server.ENTITY_SOUND_EFFECT)) {
                 WrapperPlayServerEntitySoundEffect wrapper = new WrapperPlayServerEntitySoundEffect(event);
                 soundKey = wrapper.getSoundId().getKey().getKey();
             }
