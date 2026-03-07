@@ -1,18 +1,13 @@
 package me.soundblocker.plugin;
 
-import com.github.retrooper.packetevents.event.PacketListenerAbstract;
-import com.github.retrooper.packetevents.event.PacketListenerPriority;
+import com.github.retrooper.packetevents.event.PacketListener;
 import com.github.retrooper.packetevents.event.PacketSendEvent;
 import com.github.retrooper.packetevents.protocol.packettype.PacketType;
 import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerEntitySoundEffect;
 import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerSoundEffect;
 import org.bukkit.entity.Player;
 
-public class SoundListener extends PacketListenerAbstract {
-
-    public SoundListener() {
-        super(PacketListenerPriority.HIGHEST);
-    }
+public class SoundListener implements PacketListener {
 
     @Override
     public void onPacketSend(PacketSendEvent event) {
@@ -22,11 +17,11 @@ public class SoundListener extends PacketListenerAbstract {
         String soundKey = null;
 
         try {
-            if (event.getPacketType().equals(PacketType.Play.Server.SOUND_EFFECT)) {
+            if (event.getPacketType() == PacketType.Play.Server.SOUND_EFFECT) {
                 WrapperPlayServerSoundEffect wrapper = new WrapperPlayServerSoundEffect(event);
                 soundKey = wrapper.getSoundId().getKey().getKey();
 
-            } else if (event.getPacketType().equals(PacketType.Play.Server.ENTITY_SOUND_EFFECT)) {
+            } else if (event.getPacketType() == PacketType.Play.Server.ENTITY_SOUND_EFFECT) {
                 WrapperPlayServerEntitySoundEffect wrapper = new WrapperPlayServerEntitySoundEffect(event);
                 soundKey = wrapper.getSoundId().getKey().getKey();
             }
