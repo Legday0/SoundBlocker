@@ -3,6 +3,7 @@ package me.soundblocker.plugin;
 import com.github.retrooper.packetevents.event.PacketListenerAbstract;
 import com.github.retrooper.packetevents.event.PacketSendEvent;
 import com.github.retrooper.packetevents.protocol.packettype.PacketType;
+import com.github.retrooper.packetevents.protocol.packettype.PacketTypeCommon;
 import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerEntitySoundEffect;
 import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerSoundEffect;
 import org.bukkit.entity.Player;
@@ -17,14 +18,15 @@ public class SoundPacketListener extends PacketListenerAbstract {
 
     @Override
     public void onPacketSend(PacketSendEvent event) {
+        PacketTypeCommon type = event.getPacketType();
         String key = null;
 
         try {
-            if (event.getPacketType() == PacketType.Play.Server.SOUND_EFFECT) {
+            if (type == PacketType.Play.Server.SOUND_EFFECT) {
                 key = new WrapperPlayServerSoundEffect(event)
                         .getSoundId().getKey().getKey();
 
-            } else if (event.getPacketType() == PacketType.Play.Server.ENTITY_SOUND_EFFECT) {
+            } else if (type == PacketType.Play.Server.ENTITY_SOUND_EFFECT) {
                 key = new WrapperPlayServerEntitySoundEffect(event)
                         .getSoundId().getKey().getKey();
             }
@@ -34,13 +36,11 @@ public class SoundPacketListener extends PacketListenerAbstract {
 
         SoundManager mgr = plugin.getSoundManager();
 
-        // 1. حجب
         if (mgr.isBlocked(key)) {
             event.setCancelled(true);
             return;
         }
 
-        // 2. تبديل
         SoundData rep = mgr.getReplacement(key);
         if (rep != null && event.getPlayer() instanceof Player player) {
             event.setCancelled(true);
