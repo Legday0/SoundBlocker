@@ -1,83 +1,58 @@
 package me.soundblocker.plugin;
 
-import com.comphenix.protocol.PacketType;
-import com.comphenix.protocol.ProtocolLibrary;
-import com.comphenix.protocol.ProtocolManager;
-import com.comphenix.protocol.events.ListenerPriority;
-import com.comphenix.protocol.events.PacketAdapter;
-import com.comphenix.protocol.events.PacketEvent;
-import com.comphenix.protocol.wrappers.MinecraftKey;
-import org.bukkit.Location;
+import com.github.retrooper.packetevents.event.PacketListenerAbstract;
+import com.github.retrooper.packetevents.event.PacketListenerPriority;
+import com.github.retrooper.packetevents.event.PacketSendEvent;
+import com.github.retrooper.packetevents.protocol.packettype.PacketType;
+import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerEntitySoundEffect;
+import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerSoundEffect;
 import org.bukkit.entity.Player;
 
-public class SoundListener {
+public class SoundListener extends PacketListenerAbstract {
 
-    private final SoundBlocker plugin;
-    private final ProtocolManager protocolManager;
-
-    public SoundListener(SoundBlocker plugin) {
-        this.plugin = plugin;
-        this.protocolManager = ProtocolLibrary.getProtocolManager();
-        registerPacketListener();
+    public SoundListener() {
+        super(PacketListenerPriority.HIGHEST);
     }
 
-    private void registerPacketListener() {
-        protocolManager.addPacketListener(new PacketAdapter(
-                plugin,
-                ListenerPriority.HIGHEST,
-                PacketType.Play.Server.NAMED_SOUND_EFFECT,
-                PacketType.Play.Server.ENTITY_SOUND
-        ) {
-            @Override
-            public void onPacketSending(PacketEvent event) {
-                try {
-                    String soundKey = getSoundKey(event);
-                    if (soundKey == null) return;
+    @Override
+    public void onPacketSend(PacketSendEvent event) {
+        // استخدام getInstance عشان نتجنب مشكلة الـ cast
+        SoundBlocker pl = SoundBlocker.getInstance();
+        if (pl == null) return;
 
-                    // 1. Check if blocked
-                    if (plugin.isSoundBlocked(soundKey)) {
-                        event.setCancelled(true);
-                        return;
-                    }
+        String soundKey = null;
 
-                    // 2. Check if replaced
-                    SoundReplacement rep = plugin.getReplacement(soundKey);
-                    if (rep != null) {
-                        event.setCancelled(true);
-                        Player player = event.getPlayer();
-                        // Play replacement sound for this player only
-                        Location loc = player.getLocation();
-                        player.playSound(loc, rep.getSound(), rep.getVolume(), rep.getPitch());
-                    }
-
-                } catch (Exception e) {
-                    // Ignore packet errors silently
-                }
-            }
-        });
-    }
-
-    private String getSoundKey(PacketEvent event) {
         try {
-            if (event.getPacketType() == PacketType.Play.Server.NAMED_SOUND_EFFECT) {
-                // NAMED_SOUND_EFFECT has the sound as a MinecraftKey
-                MinecraftKey key = event.getPacket().getMinecraftKeys().read(0);
-                if (key != null) return key.getKey();
-            } else if (event.getPacketType() == PacketType.Play.Server.ENTITY_SOUND) {
-                // ENTITY_SOUND - sound is stored differently
-                MinecraftKey key = event.getPacket().getMinecraftKeys().read(0);
-                if (key != null) return key.getKey();
-            }
-        } catch (Exception e) {
-            // fallback: try reading as string
-            try {
-                return event.getPacket().getStrings().read(0);
-            } catch (Exception ignored) {}
-        }
-        return null;
-    }
+            if (event.getPacketType() == PacketType.Play.Server.SOUND_EFFECT) {
+                WrapperPlayServerSoundEffect wrapper = new WrapperPlayServerSoundEffect(event);
+                soundKey = wrapper.getSoundId().getKey().getKey();
 
-    public void unregister() {
-        protocolManager.removePacketListeners(plugin);
+            } else if (event.getPacketType() == PacketType.Play.Server.ENTITY_SOUND_EFFECT) {
+                WrapperPlayServerEntitySoundEffect wrapper = new WrapperPlayServerEntitySoundEffect(event);
+                soundKey = wrapper.getSoundId().getKey().getKey();
+            }
+        } catch (Exception ignored) {}
+
+        if (soundKey == null || soundKey.isEmpty()) return;
+
+        // 1. حجب
+        if (pl.isSoundBlocked(soundKey)) {
+            event.setCancelled(true);
+            return;
+        }
+
+        // 2. تبديل
+        SoundReplacement rep = pl.getReplacement(soundKey);
+        if (rep != null) {
+            event.setCancelled(true);
+            if (event.getPlayer() instanceof Player player) {
+                final String repSound = rep.getSound();
+                final float repVol = rep.getVolume();
+                final float repPitch = rep.getPitch();
+                pl.getServer().getScheduler().runTask(pl, () ->
+                    player.playSound(player.getLocation(), repSound, repVol, repPitch)
+                );
+            }
+        }
     }
 }
